@@ -34,7 +34,7 @@
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
         h1 {
@@ -56,65 +56,109 @@
         .game {
             margin-left: 20px;
         }
+        .division-container {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .team-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .team-input {
+            flex: 1;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
         <h1 class="mb-4">Sports League Schedule Generator</h1>
-        <p>Create a 14-week regular season schedule for a 10-team league with two divisions.</p>
+        <p>Create a customized schedule for your sports league with various constraints.</p>
         
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">West Division Teams</div>
-                    <div class="card-body">
-                        <div id="west-teams">
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control west-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control west-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control west-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control west-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control west-team" placeholder="Team name">
-                            </div>
+        <div class="card mb-4">
+            <div class="card-header">League Configuration</div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="num-teams" class="form-label">Number of Teams</label>
+                        <select id="num-teams" class="form-select">
+                            <option value="4">4 Teams</option>
+                            <option value="6">6 Teams</option>
+                            <option value="8">8 Teams</option>
+                            <option value="10" selected>10 Teams</option>
+                            <option value="12">12 Teams</option>
+                            <option value="14">14 Teams</option>
+                            <option value="16">16 Teams</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <div id="custom-teams-container" class="mt-2" style="display: none;">
+                            <label for="custom-num-teams" class="form-label">Enter number of teams:</label>
+                            <input type="number" id="custom-num-teams" class="form-control" min="2" step="2" value="10">
+                            <small class="text-muted">Must be an even number</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="num-weeks" class="form-label">Regular Season Length</label>
+                        <select id="num-weeks" class="form-select">
+                            <option value="6">6 Weeks</option>
+                            <option value="8">8 Weeks</option>
+                            <option value="10">10 Weeks</option>
+                            <option value="12">12 Weeks</option>
+                            <option value="13">13 Weeks</option>
+                            <option value="14" selected>14 Weeks</option>
+                            <option value="16">16 Weeks</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <div id="custom-weeks-container" class="mt-2" style="display: none;">
+                            <label for="custom-num-weeks" class="form-label">Enter number of weeks:</label>
+                            <input type="number" id="custom-num-weeks" class="form-control" min="3" value="14">
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">East Division Teams</div>
-                    <div class="card-body">
-                        <div id="east-teams">
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control east-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control east-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control east-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control east-team" placeholder="Team name">
-                            </div>
-                            <div class="input-group mb-2">
-                                <input type="text" class="form-control east-team" placeholder="Team name">
-                            </div>
+                
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use-divisions" checked>
+                            <label class="form-check-label" for="use-divisions">
+                                Use Divisions
+                            </label>
                         </div>
                     </div>
                 </div>
+                
+                <div id="divisions-container">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="num-divisions" class="form-label">Number of Divisions</label>
+                            <select id="num-divisions" class="form-select">
+                                <option value="2" selected>2 Divisions</option>
+                                <option value="3">3 Divisions</option>
+                                <option value="4">4 Divisions</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="setup-teams-btn" class="btn btn-primary">Set Up Teams</button>
             </div>
         </div>
         
-        <div class="card mb-4">
+        <div id="teams-setup" class="card mb-4" style="display: none;">
+            <div class="card-header">Team Setup</div>
+            <div class="card-body">
+                <div id="team-inputs-container">
+                    <!-- Team inputs will be generated here -->
+                </div>
+                
+                <button id="continue-to-matchups-btn" class="btn btn-primary mt-3">Continue to Fixed Matchups</button>
+            </div>
+        </div>
+        
+        <div id="fixed-matchups-card" class="card mb-4" style="display: none;">
             <div class="card-header">Fixed Matchups</div>
             <div class="card-body">
                 <p>Click on a week to specify matchups for that week.</p>
@@ -125,11 +169,11 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="text-center mt-4">
+                    <button id="generate-btn" class="btn btn-primary">Generate Schedule</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="text-center mb-4">
-            <button id="generate-btn" class="btn btn-primary">Generate Schedule</button>
         </div>
         
         <div id="loading" class="loading">
@@ -158,9 +202,194 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Generate week accordions
+            // Show/hide custom team count input
+            document.getElementById('num-teams').addEventListener('change', function() {
+                const customTeamsContainer = document.getElementById('custom-teams-container');
+                if (this.value === 'custom') {
+                    customTeamsContainer.style.display = 'block';
+                } else {
+                    customTeamsContainer.style.display = 'none';
+                }
+            });
+            
+            // Show/hide custom week count input
+            document.getElementById('num-weeks').addEventListener('change', function() {
+                const customWeeksContainer = document.getElementById('custom-weeks-container');
+                if (this.value === 'custom') {
+                    customWeeksContainer.style.display = 'block';
+                } else {
+                    customWeeksContainer.style.display = 'none';
+                }
+            });
+            
+            // Show/hide divisions container
+            document.getElementById('use-divisions').addEventListener('change', function() {
+                const divisionsContainer = document.getElementById('divisions-container');
+                if (this.checked) {
+                    divisionsContainer.style.display = 'block';
+                } else {
+                    divisionsContainer.style.display = 'none';
+                }
+            });
+            
+            // Set up teams button click handler
+            document.getElementById('setup-teams-btn').addEventListener('click', function() {
+                setupTeamInputs();
+                document.getElementById('teams-setup').style.display = 'block';
+            });
+            
+            // Continue to fixed matchups button click handler
+            document.getElementById('continue-to-matchups-btn').addEventListener('click', function() {
+                if (validateTeamInputs()) {
+                    setupFixedMatchups();
+                    document.getElementById('fixed-matchups-card').style.display = 'block';
+                }
+            });
+            
+            // Generate button click handler
+            document.getElementById('generate-btn').addEventListener('click', generateSchedule);
+        });
+        
+        function getNumTeams() {
+            const numTeamsSelect = document.getElementById('num-teams');
+            if (numTeamsSelect.value === 'custom') {
+                return parseInt(document.getElementById('custom-num-teams').value);
+            } else {
+                return parseInt(numTeamsSelect.value);
+            }
+        }
+        
+        function getNumWeeks() {
+            const numWeeksSelect = document.getElementById('num-weeks');
+            if (numWeeksSelect.value === 'custom') {
+                return parseInt(document.getElementById('custom-num-weeks').value);
+            } else {
+                return parseInt(numWeeksSelect.value);
+            }
+        }
+        
+        function useDivisions() {
+            return document.getElementById('use-divisions').checked;
+        }
+        
+        function getNumDivisions() {
+            if (!useDivisions()) return 0;
+            return parseInt(document.getElementById('num-divisions').value);
+        }
+        
+        function setupTeamInputs() {
+            const container = document.getElementById('team-inputs-container');
+            container.innerHTML = '';
+            
+            const numTeams = getNumTeams();
+            const useDivs = useDivisions();
+            const numDivisions = getNumDivisions();
+            
+            if (useDivs) {
+                // Calculate teams per division (try to distribute evenly)
+                const teamsPerDivision = Math.floor(numTeams / numDivisions);
+                let remainingTeams = numTeams % numDivisions;
+                
+                let teamCounter = 1;
+                for (let div = 1; div <= numDivisions; div++) {
+                    const divTeams = teamsPerDivision + (remainingTeams > 0 ? 1 : 0);
+                    remainingTeams--;
+                    
+                    const divContainer = document.createElement('div');
+                    divContainer.className = 'division-container';
+                    divContainer.innerHTML = `<h4>Division ${div}</h4>`;
+                    
+                    const teamInputsContainer = document.createElement('div');
+                    teamInputsContainer.className = 'team-input-container';
+                    
+                    for (let i = 0; i < divTeams; i++) {
+                        const inputGroup = document.createElement('div');
+                        inputGroup.className = 'team-input';
+                        inputGroup.innerHTML = `
+                            <label for="team-${teamCounter}" class="form-label">Team ${teamCounter}</label>
+                            <input type="text" id="team-${teamCounter}" class="form-control team-name" 
+                                   data-division="${div}" placeholder="Team name">
+                        `;
+                        teamInputsContainer.appendChild(inputGroup);
+                        teamCounter++;
+                    }
+                    
+                    divContainer.appendChild(teamInputsContainer);
+                    container.appendChild(divContainer);
+                }
+            } else {
+                // No divisions, just list all teams
+                const teamInputsContainer = document.createElement('div');
+                teamInputsContainer.className = 'team-input-container';
+                
+                for (let i = 1; i <= numTeams; i++) {
+                    const inputGroup = document.createElement('div');
+                    inputGroup.className = 'team-input';
+                    inputGroup.innerHTML = `
+                        <label for="team-${i}" class="form-label">Team ${i}</label>
+                        <input type="text" id="team-${i}" class="form-control team-name" placeholder="Team name">
+                    `;
+                    teamInputsContainer.appendChild(inputGroup);
+                }
+                
+                container.appendChild(teamInputsContainer);
+            }
+        }
+        
+        function validateTeamInputs() {
+            const teamInputs = document.querySelectorAll('.team-name');
+            let valid = true;
+            
+            // Check for empty team names
+            teamInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                }
+            });
+            
+            // Check for duplicate team names
+            const teamNames = Array.from(teamInputs).map(input => input.value.trim());
+            const uniqueNames = new Set(teamNames.filter(name => name !== ''));
+            if (uniqueNames.size !== teamNames.filter(name => name !== '').length) {
+                alert('Team names must be unique');
+                valid = false;
+            }
+            
+            return valid;
+        }
+        
+        function getTeams() {
+            const teamInputs = document.querySelectorAll('.team-name');
+            return Array.from(teamInputs).map(input => input.value.trim());
+        }
+        
+        function getDivisionTeams() {
+            if (!useDivisions()) return null;
+            
+            const numDivisions = getNumDivisions();
+            const divisions = Array(numDivisions).fill().map(() => []);
+            
+            const teamInputs = document.querySelectorAll('.team-name');
+            teamInputs.forEach(input => {
+                const divIndex = input.dataset.division ? parseInt(input.dataset.division) - 1 : 0;
+                divisions[divIndex].push(input.value.trim());
+            });
+            
+            return divisions;
+        }
+        
+        function setupFixedMatchups() {
             const weekAccordion = document.getElementById('weekAccordion');
-            for (let week = 1; week <= 14; week++) {
+            weekAccordion.innerHTML = '';
+            
+            const numWeeks = getNumWeeks();
+            const teams = getTeams();
+            const gamesPerWeek = teams.length / 2;
+            
+            for (let week = 1; week <= numWeeks; week++) {
                 const weekItem = document.createElement('div');
                 weekItem.className = 'accordion-item';
                 weekItem.innerHTML = `
@@ -173,27 +402,25 @@
                     <div id="collapse${week}" class="accordion-collapse collapse" aria-labelledby="heading${week}" data-bs-parent="#weekAccordion">
                         <div class="accordion-body">
                             <div class="matchups-week-${week}">
-                                ${generateMatchupInputs(week, 5)}
+                                ${generateMatchupInputs(week, gamesPerWeek, teams)}
                             </div>
                         </div>
                     </div>
                 `;
                 weekAccordion.appendChild(weekItem);
             }
-            
-            // Generate button click handler
-            document.getElementById('generate-btn').addEventListener('click', generateSchedule);
-        });
+        }
         
-        function generateMatchupInputs(week, count) {
+        function generateMatchupInputs(week, count, teams) {
             let html = '';
             for (let i = 1; i <= count; i++) {
                 html += `
                     <div class="matchup-container" data-week="${week}" data-slot="${i}">
                         <div class="row">
                             <div class="col-md-5">
-                                <select class="form-select team1" required>
+                                <select class="form-select team1">
                                     <option value="">Select Team 1</option>
+                                    ${teams.map(team => `<option value="${team}">${team}</option>`).join('')}
                                 </select>
                             </div>
                             <div class="col-md-2 text-center">
@@ -204,8 +431,9 @@
                                 </select>
                             </div>
                             <div class="col-md-5">
-                                <select class="form-select team2" required>
+                                <select class="form-select team2">
                                     <option value="">Select Team 2</option>
+                                    ${teams.map(team => `<option value="${team}">${team}</option>`).join('')}
                                 </select>
                             </div>
                         </div>
@@ -215,54 +443,12 @@
             return html;
         }
         
-        function updateTeamSelects() {
-            const westTeams = Array.from(document.querySelectorAll('.west-team'))
-                .map(input => input.value.trim())
-                .filter(name => name !== '');
-                
-            const eastTeams = Array.from(document.querySelectorAll('.east-team'))
-                .map(input => input.value.trim())
-                .filter(name => name !== '');
-                
-            const allTeams = [...westTeams, ...eastTeams];
-            
-            // Update all team selects
-            const team1Selects = document.querySelectorAll('.team1');
-            const team2Selects = document.querySelectorAll('.team2');
-            
-            [team1Selects, team2Selects].forEach(selects => {
-                selects.forEach(select => {
-                    const currentValue = select.value;
-                    select.innerHTML = '<option value="">Select Team</option>';
-                    
-                    allTeams.forEach(team => {
-                        const option = document.createElement('option');
-                        option.value = team;
-                        option.textContent = team;
-                        if (team === currentValue) {
-                            option.selected = true;
-                        }
-                        select.appendChild(option);
-                    });
-                });
-            });
-        }
-        
         function generateSchedule() {
-            // Get teams
-            const westTeams = Array.from(document.querySelectorAll('.west-team'))
-                .map(input => input.value.trim())
-                .filter(name => name !== '');
-                
-            const eastTeams = Array.from(document.querySelectorAll('.east-team'))
-                .map(input => input.value.trim())
-                .filter(name => name !== '');
-            
-            // Validate teams
-            if (westTeams.length !== 5 || eastTeams.length !== 5) {
-                alert('Please enter exactly 5 teams for each division.');
-                return;
-            }
+            // Get teams and configuration
+            const teams = getTeams();
+            const numWeeks = getNumWeeks();
+            const useDivs = useDivisions();
+            const divisionTeams = useDivs ? getDivisionTeams() : null;
             
             // Get fixed matchups
             const fixedMatchups = [];
@@ -284,6 +470,17 @@
                 }
             });
             
+            // Validate inputs
+            if (teams.length % 2 !== 0) {
+                alert('Number of teams must be even');
+                return;
+            }
+            
+            if (numWeeks < teams.length - 1) {
+                alert(`Season too short. Need at least ${teams.length - 1} weeks for each team to play each other once.`);
+                return;
+            }
+            
             // Show loading
             document.getElementById('loading').style.display = 'block';
             document.getElementById('solution-container').style.display = 'none';
@@ -295,8 +492,10 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    west_teams: westTeams,
-                    east_teams: eastTeams,
+                    teams: teams,
+                    num_weeks: numWeeks,
+                    use_divisions: useDivs,
+                    division_teams: divisionTeams,
                     fixed_matchups: fixedMatchups
                 }),
             })
@@ -304,6 +503,12 @@
             .then(data => {
                 // Hide loading
                 document.getElementById('loading').style.display = 'none';
+                
+                // Check for errors
+                if (data.status === 'ERROR') {
+                    alert(data.message);
+                    return;
+                }
                 
                 // Show solutions
                 document.getElementById('solution-container').style.display = 'block';
@@ -316,9 +521,17 @@
                 
                 for (let i = 0; i < data.solution_count; i++) {
                     const button = document.createElement('button');
-                    button.className = 'btn btn-outline-primary';
+                    button.className = i === 0 ? 'btn btn-primary' : 'btn btn-outline-primary';
                     button.textContent = `Solution ${i + 1}`;
-                    button.onclick = () => displaySolution(data.solutions[i]);
+                    button.onclick = function() {
+                        // Update active button
+                        document.querySelectorAll('#solution-buttons button').forEach(btn => {
+                            btn.className = 'btn btn-outline-primary';
+                        });
+                        this.className = 'btn btn-primary';
+                        
+                        displaySolution(data.solutions[i]);
+                    };
                     solutionButtons.appendChild(button);
                 }
                 
@@ -339,7 +552,7 @@
             let html = '';
             
             // Display schedule week by week
-            for (let week = 1; week <= 14; week++) {
+            for (let week = 1; week <= Object.keys(solution).length; week++) {
                 html += `<h4>Week ${week}</h4><ul>`;
                 
                 solution[week].forEach(match => {
@@ -359,7 +572,7 @@
             
             // Initialize counters
             const allTeams = [];
-            for (let week = 1; week <= 14; week++) {
+            for (let week = 1; week <= Object.keys(solution).length; week++) {
                 solution[week].forEach(match => {
                     const [away, home] = match;
                     if (!allTeams.includes(away)) allTeams.push(away);
@@ -379,7 +592,7 @@
             });
             
             // Count games
-            for (let week = 1; week <= 14; week++) {
+            for (let week = 1; week <= Object.keys(solution).length; week++) {
                 solution[week].forEach(match => {
                     const [away, home] = match;
                     awayCount[away]++;
@@ -408,13 +621,71 @@
                 html += '</ul>';
             });
             
+            // Check for consecutive home/away games
+            html += '<h5>Consecutive Home/Away Games</h5><ul>';
+            allTeams.forEach(team => {
+                let maxConsecutiveHome = 0;
+                let maxConsecutiveAway = 0;
+                let currentConsecutiveHome = 0;
+                let currentConsecutiveAway = 0;
+                
+                for (let week = 1; week <= Object.keys(solution).length; week++) {
+                    const isHome = solution[week].some(match => match[1] === team);
+                    const isAway = solution[week].some(match => match[0] === team);
+                    
+                    if (isHome) {
+                        currentConsecutiveHome++;
+                        currentConsecutiveAway = 0;
+                        maxConsecutiveHome = Math.max(maxConsecutiveHome, currentConsecutiveHome);
+                    } else if (isAway) {
+                        currentConsecutiveAway++;
+                        currentConsecutiveHome = 0;
+                        maxConsecutiveAway = Math.max(maxConsecutiveAway, currentConsecutiveAway);
+                    }
+                }
+                
+                html += `<li>${team}: Max ${maxConsecutiveHome} consecutive home, Max ${maxConsecutiveAway} consecutive away</li>`;
+            });
+            html += '</ul>';
+            
+            // Check for rematches within 4 weeks
+            html += '<h5>Rematch Gaps</h5><ul>';
+            const checkedPairs = new Set();
+            
+            allTeams.forEach(team => {
+                allTeams.forEach(opponent => {
+                    if (team !== opponent && !checkedPairs.has(`${team}-${opponent}`) && !checkedPairs.has(`${opponent}-${team}`)) {
+                        checkedPairs.add(`${team}-${opponent}`);
+                        
+                        // Find all weeks where these teams play
+                        const matchupWeeks = [];
+                        for (let week = 1; week <= Object.keys(solution).length; week++) {
+                            if (solution[week].some(match => 
+                                (match[0] === team && match[1] === opponent) || 
+                                (match[0] === opponent && match[1] === team))) {
+                                matchupWeeks.push(week);
+                            }
+                        }
+                        
+                        if (matchupWeeks.length > 1) {
+                            // Calculate gaps between matchups
+                            const gaps = [];
+                            for (let i = 1; i < matchupWeeks.length; i++) {
+                                gaps.push(matchupWeeks[i] - matchupWeeks[i-1]);
+                            }
+                            
+                            const minGap = Math.min(...gaps);
+                            html += `<li>${team} vs ${opponent}: Play in weeks ${matchupWeeks.join(', ')} (min gap: ${minGap} weeks)</li>`;
+                        } else if (matchupWeeks.length === 1) {
+                            html += `<li>${team} vs ${opponent}: Play once in week ${matchupWeeks[0]}</li>`;
+                        }
+                    }
+                });
+            });
+            html += '</ul>';
+            
             solutionDisplay.innerHTML = html;
         }
-        
-        // Update team selects when team names change
-        document.querySelectorAll('.west-team, .east-team').forEach(input => {
-            input.addEventListener('change', updateTeamSelects);
-        });
     </script>
 </body>
 </html> 
