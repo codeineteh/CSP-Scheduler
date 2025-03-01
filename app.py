@@ -4,6 +4,7 @@ import json
 import subprocess
 import io
 import sys
+import math
 
 app = Flask(__name__)
 
@@ -63,16 +64,35 @@ class SolutionCounter(cp_model.CpSolverSolutionCallback):
     def solutions(self):
         return self.__solutions
 
-def generate_schedule(west_teams, east_teams, fixed_matchups):
-    teams = west_teams + east_teams
+def generate_schedule(teams, num_weeks, use_divisions, division_teams=None, fixed_matchups=None):
     num_teams = len(teams)
-    num_weeks = 14
-
+    
+    # Validate inputs
+    if num_teams % 2 != 0:
+        return {
+            'status': 'ERROR',
+            'message': 'Number of teams must be even',
+            'solution_count': 0,
+            'solutions': []
+        }
+    
+    if num_weeks < num_teams - 1:
+        return {
+            'status': 'ERROR',
+            'message': f'Season too short. Need at least {num_teams - 1} weeks for each team to play each other once.',
+            'solution_count': 0,
+            'solutions': []
+        }
+    
     # Create team indices
     team_indices = {team: i for i, team in enumerate(teams)}
-    west = [team_indices[team] for team in west_teams]
-    east = [team_indices[team] for team in east_teams]
-
+    
+    # Set up divisions if used
+    divisions = []
+    if use_divisions and division_teams:
+        for division in division_teams:
+            divisions.append([team_indices[team] for team in division])
+    
     model = cp_model.CpModel()
 
     # Create binary variables for each possible game in each week
@@ -92,50 +112,22 @@ def generate_schedule(west_teams, east_teams, fixed_matchups):
                 == 1
             )
 
-    # (2) Divisional matchups
-    for idx1 in range(len(west)):
-        for idx2 in range(idx1 + 1, len(west)):
-            i = west[idx1]
-            j = west[idx2]
-            model.Add(sum(game[(w, i, j)] for w in range(num_weeks)) == 1)
-            model.Add(sum(game[(w, j, i)] for w in range(num_weeks)) == 1)
+    # (2) Home/away balance
+    # For even-week seasons, each team has equal home and away games
+    # For odd-week seasons, teams have at most 1 difference between home and away games
+    min_home_games = (num_weeks - 1) // 2
+    max_home_games = math.ceil(num_weeks / 2)
     
-    for idx1 in range(len(east)):
-        for idx2 in range(idx1 + 1, len(east)):
-            i = east[idx1]
-            j = east[idx2]
-            model.Add(sum(game[(w, i, j)] for w in range(num_weeks)) == 1)
-            model.Add(sum(game[(w, j, i)] for w in range(num_weeks)) == 1)
-
-    # (3) Inter-divisional matchups
-    for i in west:
-        for j in east:
-            inter_games = sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks))
-            model.Add(inter_games >= 1)
-            model.Add(inter_games <= 2)
-
-    # (4) Home/away balance
     for t in range(num_teams):
-        model.Add(sum(game[(w, i, t)] for w in range(num_weeks) for i in range(num_teams) if i != t) == 7)
-        model.Add(sum(game[(w, t, j)] for w in range(num_weeks) for j in range(num_teams) if j != t) == 7)
-
-    # (5) Add fixed matchups
-    for matchup in fixed_matchups:
-        week = matchup['week'] - 1  # Convert to 0-indexed
-        team1 = team_indices[matchup['team1']]
-        team2 = team_indices[matchup['team2']]
+        home_games = sum(game[(w, i, t)] for w in range(num_weeks) for i in range(num_teams) if i != t)
+        model.Add(home_games >= min_home_games)
+        model.Add(home_games <= max_home_games)
         
-        if matchup['direction'] == 'either':
-            # Either team1@team2 or team2@team1
-            model.Add(game[(week, team1, team2)] + game[(week, team2, team1)] == 1)
-        elif matchup['direction'] == 'team1_away':
-            # team1 is away, team2 is home
-            model.Add(game[(week, team1, team2)] == 1)
-        elif matchup['direction'] == 'team2_away':
-            # team2 is away, team1 is home
-            model.Add(game[(week, team2, team1)] == 1)
+        away_games = sum(game[(w, t, j)] for w in range(num_weeks) for j in range(num_teams) if j != t)
+        model.Add(away_games >= min_home_games)
+        model.Add(away_games <= max_home_games)
 
-    # (6) No team can have 3+ consecutive home/away games
+    # (3) No team can have 3+ consecutive home/away games
     for t in range(num_teams):
         for w in range(num_weeks - 2):
             model.Add(
@@ -145,7 +137,7 @@ def generate_schedule(west_teams, east_teams, fixed_matchups):
                 sum(game[(w+i, t, j)] for i in range(3) for j in range(num_teams) if j != t) <= 2
             )
 
-    # (7) No team can play the same opponent within 4 weeks
+    # (4) No team can play the same opponent within 4 weeks
     for i in range(num_teams):
         for j in range(num_teams):
             if i != j:
@@ -156,6 +148,77 @@ def generate_schedule(west_teams, east_teams, fixed_matchups):
                                 game[(w, i, j)] + game[(w, j, i)] +
                                 game[(w + gap, i, j)] + game[(w + gap, j, i)] <= 1
                             )
+    
+    # (5) Add scheduling rules based on divisions and season length
+    if use_divisions and divisions:
+        # With divisions: 
+        # - Teams play all divisional opponents home and away
+        # - Teams play all non-divisional opponents at least once
+        for div in divisions:
+            # Divisional matchups: each pair in the same division plays home and away
+            for idx1 in range(len(div)):
+                for idx2 in range(idx1 + 1, len(div)):
+                    i = div[idx1]
+                    j = div[idx2]
+                    model.Add(sum(game[(w, i, j)] for w in range(num_weeks)) == 1)
+                    model.Add(sum(game[(w, j, i)] for w in range(num_weeks)) == 1)
+        
+        # Inter-divisional matchups
+        for div1_idx in range(len(divisions)):
+            for div2_idx in range(div1_idx + 1, len(divisions)):
+                for i in divisions[div1_idx]:
+                    for j in divisions[div2_idx]:
+                        # Each team plays each team from other divisions at least once
+                        model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) >= 1)
+                        
+                        # For 14-week seasons, allow up to 2 games between inter-division teams
+                        if num_weeks >= 14:
+                            model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) <= 2)
+                        else:
+                            # For 13-week seasons, exactly 1 game between inter-division teams
+                            model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) == 1)
+    else:
+        # Without divisions:
+        # - Each team plays every other team at least once
+        # - If a team plays an opponent twice, it must be home and away
+        for i in range(num_teams):
+            for j in range(num_teams):
+                if i != j:
+                    # Each team plays each other team at least once
+                    model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) >= 1)
+                    
+                    # If a team plays an opponent twice, it must be once home and once away
+                    # First, create a variable to track if they play twice
+                    plays_twice = model.NewBoolVar(f'plays_twice_{i}_{j}')
+                    
+                    # Link the plays_twice variable to the condition
+                    model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) >= 2).OnlyEnforceIf(plays_twice)
+                    model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) <= 1).OnlyEnforceIf(plays_twice.Not())
+                    
+                    # If they play twice, ensure it's once home and once away
+                    model.Add(sum(game[(w, i, j)] for w in range(num_weeks)) == 1).OnlyEnforceIf(plays_twice)
+                    model.Add(sum(game[(w, j, i)] for w in range(num_weeks)) == 1).OnlyEnforceIf(plays_twice)
+                    
+                    # For 14-week seasons, allow up to 2 games between any teams
+                    if num_weeks >= 14:
+                        model.Add(sum(game[(w, i, j)] + game[(w, j, i)] for w in range(num_weeks)) <= 2)
+
+    # (6) Add fixed matchups if provided
+    if fixed_matchups:
+        for matchup in fixed_matchups:
+            week = matchup['week'] - 1  # Convert to 0-indexed
+            team1 = team_indices[matchup['team1']]
+            team2 = team_indices[matchup['team2']]
+            
+            if matchup['direction'] == 'either':
+                # Either team1@team2 or team2@team1
+                model.Add(game[(week, team1, team2)] + game[(week, team2, team1)] == 1)
+            elif matchup['direction'] == 'team1_away':
+                # team1 is away, team2 is home
+                model.Add(game[(week, team1, team2)] == 1)
+            elif matchup['direction'] == 'team2_away':
+                # team2 is away, team1 is home
+                model.Add(game[(week, team2, team1)] == 1)
 
     # Solve the model
     solver = cp_model.CpSolver()
@@ -174,29 +237,18 @@ def generate_schedule(west_teams, east_teams, fixed_matchups):
 
 @app.route('/')
 def index():
-    # Capture the output of schedule_csp.py
-    old_stdout = sys.stdout
-    new_stdout = io.StringIO()
-    sys.stdout = new_stdout
-    
-    # Import and run the main function
-    from schedule_csp import main
-    main()
-    
-    # Restore stdout and get the output
-    sys.stdout = old_stdout
-    output = new_stdout.getvalue()
-    
-    return render_template('index.html', output=output)
+    return render_template('index.html')
 
 @app.route('/generate', methods=['POST'])
 def generate():
     data = request.json
-    west_teams = data['west_teams']
-    east_teams = data['east_teams']
-    fixed_matchups = data['fixed_matchups']
+    teams = data['teams']
+    num_weeks = int(data['num_weeks'])
+    use_divisions = data['use_divisions']
+    division_teams = data.get('division_teams', None)
+    fixed_matchups = data.get('fixed_matchups', [])
     
-    result = generate_schedule(west_teams, east_teams, fixed_matchups)
+    result = generate_schedule(teams, num_weeks, use_divisions, division_teams, fixed_matchups)
     return jsonify(result)
 
 if __name__ == '__main__':
